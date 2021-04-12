@@ -1,0 +1,8 @@
+# created by virtualenv automatically
+models/
+lib/
+etc/
+share/
+file.py
+Scripts/
+*.cfg
