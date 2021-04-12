@@ -46,7 +46,7 @@ for val in mod:
 with open('models/vectorizer.pk', 'rb') as file:
     vectorizer = pickle.load(file)
 
-# models chekinh
+# models
 models = {}
 for val in mod:
     models[val] = {}
