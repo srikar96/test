@@ -14,6 +14,7 @@ import time
 import random
 import string
 import flask
+import plotly.graph_objs as go
 
 import pandas as pd
 import pickle
@@ -257,6 +258,20 @@ app.layout = html.Div([
             )
         ],
         className="row mt-2",
+    ),
+    html.Div(
+    [
+        html.Div(
+                [
+                    dcc.Graph(
+                        id="bar_chart",
+                        style={"height": 400},
+                        config=dict(displayModeBar=False),
+                    ),
+                ],
+                className="col-md-5 col-sm-12 text-center text-primary card card-body bg-light"
+            )
+    ]
     )
 ])
 
@@ -376,5 +391,46 @@ def roc_update(model):
     roc = round(roc*100/6,3)
     return roc
 
+@app.callback(
+    Output("bar_chart", "figure"),
+    [Input("check_button", "n_clicks"), Input('school_selection', 'value')],
+    state=[State(component_id='input_text', component_property='value')])
+def bar_update(click, model, text):
+    if text:
+        tst = vectorizer.transform([text])
+        xvals = []
+        yvals = ['Identity Hate', 'Threat', 'Severe Toxic', 'Insult', 'Obscene', 'Toxic']
+        if model == 'nb':
+            xvals.append(round(models[model]['identity_hate'].predict_proba(tst)[0][1], 3))
+            xvals.append(round(models[model]['threat'].predict_proba(tst)[0][1], 3))
+            xvals.append(round(models[model]['severe_toxic'].predict_proba(tst)[0][1], 3))
+            xvals.append(round(models[model]['insult'].predict_proba(tst)[0][1], 3))
+            xvals.append(round(models[model]['obscene'].predict_proba(tst)[0][1], 3))
+            xvals.append(round(models[model]['toxic'].predict_proba(tst)[0][1], 3))
+        else:
+            xvals.append(round(models[model]['identity_hate']._predict_proba_lr(tst)[0][1], 3))
+            xvals.append(round(models[model]['threat']._predict_proba_lr(tst)[0][1], 3))
+            xvals.append(round(models[model]['severe_toxic']._predict_proba_lr(tst)[0][1], 3))
+            xvals.append(round(models[model]['insult']._predict_proba_lr(tst)[0][1], 3))
+            xvals.append(round(models[model]['obscene']._predict_proba_lr(tst)[0][1], 3))
+            xvals.append(round(models[model]['toxic']._predict_proba_lr(tst)[0][1], 3))
+
+        return {
+        'data': [go.Bar(x = yvals, y = [i*100 for i in xvals], text = [round(i*100, 2) for i in xvals], textposition = 'auto', name = 'Toxic')],
+        'layout': go.Layout(
+                            title = 'Toxicity',
+                            yaxis = dict(title = 'Percentage of Toxicity', range = [0,100]),
+                            height = 395,
+                            )
+            }
+    else:
+        return {
+        'data': [go.Bar(x = ['Identity Hate', 'Threat', 'Severe Toxic', 'Insult', 'Obscene', 'Toxic'], y = [0,0,0,0,0,0], textposition = 'auto', name = 'Toxic')],
+        'layout': go.Layout(
+                            title = 'Toxicity',
+                            yaxis = dict(title = 'Percentage of Toxicity', range = [0,100]),
+                            height = 395,
+                            )
+            }
 if __name__ == '__main__':
     app.run_server(debug=True)
