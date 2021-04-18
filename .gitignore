@@ -5,3 +5,6 @@ share/
 file.py
 Scripts/
 *.cfg
+tester.py
+config.py
+__pycache__
