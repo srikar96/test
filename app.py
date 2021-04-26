@@ -8,6 +8,7 @@ import json
 import plotly
 import numpy as np
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 from dash.dependencies import Input, Output, State
 from pandas.io.json import json_normalize
 import time
@@ -150,7 +151,8 @@ app.layout = html.Div([
                 ],
                 value = 'svm',
                 clearable=False,
-                placeholder = 'Select Model'
+                placeholder = 'Select Model',
+                style={'color': 'black', 'font-size': '120%'}
             ),
             className="col-md-4 col-sm-6 col-4",
         ),
@@ -291,14 +293,21 @@ app.layout = html.Div([
                 ),
                 className="col-md-5 col-sm-12 text-center text-primary card card-body bg-light"
             ),
-        html.Div(
-                dcc.Graph(
-                    id="roc_chart",
-                    style={"height": 410},
-                    config=dict(displayModeBar=False),
-                ),
-                className="col-md-7 col-sm-12 text-center text-primary card card-body bg-light"
-            ),
+        html.Div([
+                    dcc.Dropdown(
+                        id = "color_selection",
+                        options = [{'label':i.capitalize(), 'value':i} for i in cats],
+                        value = 'toxic',
+                        clearable = False,
+                        placeholder = 'Select Category',
+                        style={'color': 'black', 'font-size': '120%'}
+                    ),
+                    dcc.Graph(
+                        id="roc_chart",
+                        style={"height": 410},
+                        config=dict(displayModeBar=False),
+                    ),
+            ], className="col-md-7 col-sm-12 text-center text-primary card card-body bg-light"),
     ],
     className="row mt-2"
     )
@@ -476,10 +485,14 @@ def bar_update(click, model, text):
 
 @app.callback(
     Output("roc_chart", "figure"),
-    [Input('school_selection', 'value')])
-def roc_update(model):
-    model = models['svm']['toxic']
-    y_score = model._predict_proba_lr(testing_comments)[:, 1]
+    [Input('school_selection', 'value'), Input('color_selection', 'value')])
+def roc_update(model, color):
+    mod1 = model
+    model = models[model][color]
+    if mod1 == 'nb':
+        y_score = model.predict_proba(testing_comments)[:, 1]
+    else:
+        y_score = model._predict_proba_lr(testing_comments)[:, 1]
 
     fpr, tpr, thresholds = roc_curve(y_test['toxic'], y_score)
     score = auc(fpr, tpr)
@@ -494,6 +507,12 @@ def roc_update(model):
         type='line', line=dict(dash='dash'),
         x0=0, x1=1, y0=0, y1=1)
 
+    fig.update_layout(
+        title="ROC Curve",
+        xaxis_title='False Positive Rate',
+        yaxis_title='True Positive Rate',
+        # width=950, height=410
+    )
     return fig
 
 app.run_server(debug=True)
